@@ -1,0 +1,8 @@
+websockets==12.0
+sounddevice==0.4.6
+numpy
+deepgram-sdk>=3.0,<4.0
+python-dotenv
+websockets # Added for UI communication
+deepl # Added for translation service
+openai # Added for LLM suggestions

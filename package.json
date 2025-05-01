@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "electron.cjs",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -10,9 +11,12 @@
     "preview": "vite preview",
     "start:ui": "vite",
     "start:backend": "python backend/main.py",
-    "start": "concurrently \"npm run start:ui\" \"npm run start:backend\""
+    "start:electron": "electron .",
+    "start": "concurrently \"npm:start:ui\" \"npm:start:backend\" \"npm:start:electron\"",
+    "build:electron": "electron-builder"
   },
   "dependencies": {
+    "electron-is-dev": "^3.0.1",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -27,6 +31,8 @@
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.18",
     "concurrently": "^8.2.2",
+    "electron": "^32.0.0",
+    "electron-builder": "^25.0.3",
     "eslint": "^9.9.1",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.11",

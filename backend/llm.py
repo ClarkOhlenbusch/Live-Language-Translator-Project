@@ -23,25 +23,38 @@ else:
     logging.warning("OPENAI_API_KEY not found in .env file. LLM suggestions will fail.")
 
 async def get_llm_suggestions(english_text: str) -> list[dict[str, str]] | None:
-    """Gets 1-2 simple Italian reply suggestions from GPT-4o mini based on English text."""
+    """Gets 1-2 simple Italian reply suggestions from GPT-4o mini based on English text, 
+       considering the specific user and exam context."""
     if not client:
         logging.error("OpenAI client is not initialized. Cannot get suggestions.")
         return None
     if not english_text or not english_text.strip():
         return [] # Return empty list for empty input
 
-    # Define the persona and task for the LLM
-    system_prompt = ( 
-        "You are an assistant helping an intermediate Italian language learner. "
-        "Based on the provided English translation of what was just said in Italian, "
-        "suggest 1 or 2 very simple, common, and relevant Italian replies a learner could use. "
-        "For each Italian reply, provide a simple, direct English gloss."
-        "Output ONLY a valid JSON list of objects, where each object has keys 'italian' and 'english'. "
-        "Even if you only provide one suggestion, it MUST be enclosed in a list. "
-        "Example: [{ \"italian\": \"Capisco.\", \"english\": \"I understand.\" }, { \"italian\": \"Interessante.\", \"english\": \"Interesting.\" }]" 
-    )
+    # Define the persona, context, and task for the LLM
+    system_prompt = f"""
+You are an assistant helping Clark Ohlenbusch, an intermediate Italian language learner (Italian 102, B1 level), prepare for an oral exam. 
+His exam theme is: "Un episodio interessante o divertente del tuo passato."
+He needs to use imperfetto and passato prossimo correctly.
+
+Clark's Background:
+- Age: 21
+- From: Western Massachusetts, lives in Charlestown (Boston)
+- Studies: Computer Science
+- Heritage: Albanian/French (close to Albanian grandfather)
+- Interests: Nature/hiking, languages/cultures, weightlifting, history (Genghis Khan, Sengoku, conflict), travel (Japan)
+- Story he will tell: Clark was walking in the woods with his grandfather ("Quando ero piccolo, andavo spesso..."). Grandfather saw a snake, grabbed it, hit it against a tree, and walked on. Clark was surprised and will end by asking the professor "Lei ha mai visto un serpente nella natura?"
+
+Your Task:
+Based *only* on the provided English translation of what the *professor* (or the last speaker) just said to Clark, suggest 1 or 2 very simple, common, and relevant Italian replies *that Clark could use*. The replies should be natural for a B1 level student in this exam context, keeping his background in mind where appropriate.
+
+Output Format:
+Output ONLY a valid JSON list of objects, where each object has keys 'italian' and 'english'. Even if you only provide one suggestion, it MUST be enclosed in a list. 
+Example: [{{"italian": "Sì, una volta l'ho visto.", "english": "Yes, I saw one once."}}, {{"italian": "No, mai!", "english": "No, never!"}}]
+"""
     
-    user_prompt = f"What was said (English translation): \"{english_text}\""
+    # The user_prompt now represents what the *other person* said
+    user_prompt = f"What the professor/speaker said to Clark (English translation): \"{english_text}\""
 
     # Define the model to use *before* the first log message that uses it
     model_name = "gpt-4o-mini" # Reverted back to mini for reliability

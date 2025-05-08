@@ -43,8 +43,33 @@
  9.4 - Updated WebSocket message format and frontend (`App.tsx`, `TranscriptItem.tsx`) to display English translation.
  9.5 - Successfully tested end-to-end flow including translation.
 10) Add LLM Reply Suggestions
- 10.1 - TODO: Add OpenAI client library (`openai`) to `backend/requirements.txt`.
- 10.2 - TODO: Get OpenAI API key into `.env` file.
- 10.3 - TODO: Create `backend/llm.py` with a function to call GPT-4o mini.
- 10.4 - TODO: Integrate LLM step into `main.py` pipeline (after translation).
- 10.5 - TODO: Update WebSocket message format and frontend to display suggestions.
+ 10.1 - Added OpenAI client library (`openai`) to `backend/requirements.txt`.
+ 10.2 - Added OpenAI API key to `.env` file.
+ 10.3 - Created `backend/llm.py` with a function to call GPT-4o mini.
+ 10.4 - Integrated LLM step into `main.py` pipeline (after translation).
+ 10.5 - Updated WebSocket message format and frontend to display suggestions.
+ 10.6 - Successfully tested end-to-end flow with basic LLM suggestions.
+11) One-Click Runner & Setup
+ 11.1 - Created `run-app.bat`, `run-app.sh`, `scripts/setup.js`.
+ 11.2 - Refactored `package.json` start scripts.
+ 11.3 - Fixed Electron startup issues (`electron-is-dev` replacement).
+ 11.4 - Successfully tested running the app via `run-app.bat`.
+12) Multilingual Support & Renaming
+ 12.1 - Configured Deepgram for `nova-3` and `language="multi"`.
+ 12.2 - Updated DeepL (`translation.py`) to auto-detect source language.
+ 12.3 - Renamed UI elements (`OverlayWindow`, `TranscriptItem`) and types (`original` field) to be language-agnostic.
+ 12.4 - Updated project name in `package.json` and created `README.md`.
+13) User Settings & Contextual LLM
+ 13.1 - Created `SettingsModal.tsx` component.
+ 13.2 - Added settings state management to `App.tsx` using `localStorage`.
+ 13.3 - Enabled backend (`main.py`) to receive and store settings.
+ 13.4 - Updated `llm.py` prompt to incorporate user name, personal info, and conversation context.
+ 13.5 - Updated `llm.py` to use detected language for response generation based on settings.
+ 13.6 - Refined UI layout for settings modal and transcript items.
+14) Backend Processing Toggle
+ 14.1 - Added Power toggle button and loading indicators to `OverlayWindow.tsx`.
+ 14.2 - Implemented state management and WebSocket commands (`start/stop_processing`, `backend_status`) in `App.tsx`.
+ 14.3 - Updated `main.py` to handle toggle commands, manage `DeepgramSTT` lifecycle, clear audio queue, and send status updates.
+ 14.4 - Fixed duplicate transcription bug by moving `stt.py` event handler registration to `__init__`.
+ 14.5 - Refined LLM prompt (`llm.py`) to generate answers, not repeat questions.
+ 14.6 - Successfully tested toggle functionality and confirmed duplicate issue resolution.

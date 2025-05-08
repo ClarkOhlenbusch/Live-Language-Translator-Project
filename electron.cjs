@@ -1,12 +1,13 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
-const isDev = require('electron-is-dev'); // Helper to check if in development
+// Replace electron-is-dev with a simple environment check
+const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
 function createWindow() {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 800, // Adjust width as needed
-    height: 600, // Adjust height as needed
+    width: 650, // Match OverlayWindow width
+    height: 400, // Initial height, can be adjusted
     alwaysOnTop: true, // <--- Make the window always on top
     webPreferences: {
       // It's recommended to use a preload script for security,
@@ -16,9 +17,13 @@ function createWindow() {
       contextIsolation: false, 
       // preload: path.join(__dirname, 'preload.js') // Example if using preload
     },
-    // frame: false, // Uncomment for a borderless window
-    // transparent: true, // Uncomment for a transparent window (requires frame: false)
+    frame: false, // Keep frameless
+    // transparent: true, // REMOVE transparency
+    backgroundColor: '#0f172a' // Set to slate-900 (opaque)
   });
+
+  // --- Maximize the window --- 
+  // mainWindow.maximize(); // REMOVE maximize
 
   // Load the index.html of the app.
   // In development, load from Vite dev server; otherwise, load the built file.
@@ -42,7 +47,7 @@ function createWindow() {
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   createWindow();
-
+  
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.

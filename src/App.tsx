@@ -1,43 +1,94 @@
 import React, { useState, useEffect, useRef } from 'react';
 import OverlayWindow from './components/OverlayWindow';
 import { connectWebSocket, disconnectWebSocket } from './utils/websocket';
+import { Settings as SettingsType, defaultSettings } from './components/SettingsModal';
 
 // Define the structure for transcript items - align with TranscriptData from types
 // No longer need a separate interface here if it matches the imported one
 // We can import TranscriptData directly later if needed, but for now matching structure
 interface TranscriptItem {
   id: string;
-  italian: string;
+  original: string;  // Changed from italian
   english: string; // Make required
-  replies: { italian: string; english: string }[]; // Make required
+  replies: { original: string; english: string }[]; // Make required
+  detected_language?: string; // The language code detected by the backend
 }
 
 function App() {
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ x: 20, y: 20 });
   const [transcriptData, setTranscriptData] = useState<TranscriptItem[]>([]);
+  const [settings, setSettings] = useState<SettingsType>(() => {
+    // Try to load settings from localStorage
+    const savedSettings = localStorage.getItem('translator-settings');
+    if (savedSettings) {
+      try {
+        return JSON.parse(savedSettings) as SettingsType;
+      } catch (e) {
+        console.error('Failed to parse saved settings:', e);
+      }
+    }
+    return defaultSettings;
+  });
+  
+  const [isBackendProcessing, setIsBackendProcessing] = useState(true); // Default to ON
+  const [isBackendTransitioning, setIsBackendTransitioning] = useState(false);
+  
   const wsRef = useRef<WebSocket | null>(null); // Create a ref for the WebSocket instance
 
+  // Effect to save settings to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('translator-settings', JSON.stringify(settings));
+  }, [settings]);
+
   // WebSocket message handler
-  const handleNewTranscript = (data: any) => {
-    // Check if it's a transcript message with content
-    if (data && data.type === 'transcript' && data.transcript) {
+  const handleWebSocketMessage = (data: any) => {
+    if (data && data.type === 'transcript_data' && data.transcript) {
       const newItem: TranscriptItem = {
-        id: Date.now().toString(), // Simple unique ID
-        italian: data.transcript,
-        english: data.english || "", 
-        // Use the received replies array, default to empty array if not present or LLM failed
-        replies: data.replies || [], 
+        id: Date.now().toString(),
+        original: data.transcript,
+        english: data.english || "",
+        replies: data.replies || [],
+        detected_language: data.detected_language
       };
-      // Prepend new item and keep max length (e.g., 10 items)
-      setTranscriptData((prevData: TranscriptItem[]) => [newItem, ...prevData].slice(0, 10));
-    } else if (data && data.type === 'transcript') {
-        // Handle cases where we might get an empty transcript back (e.g., end of utterance)
-        // We might not want to display these, or handle them differently.
-        // For now, we just log it.
-        console.debug("Received transcript message with empty content.");
+      setTranscriptData((prevData) => [newItem, ...prevData].slice(0, 10));
+    } else if (data && data.type === 'transcript_data') {
+      console.debug("Received transcript_data message with empty content.");
+    } else if (data && data.type === 'backend_status') {
+      setIsBackendProcessing(data.isActive);
+      setIsBackendTransitioning(false); // Transition finished
+      console.log(`Backend status updated: Processing ${data.isActive ? 'ON' : 'OFF'}`);
     }
-    // Can add handling for other message types here later (e.g., errors, status updates)
+  };
+
+  // Function to send WebSocket messages safely
+  const sendWsMessage = (message: object) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(message));
+    } else {
+      console.warn("WebSocket not open. Message not sent:", message);
+    }
+  };
+
+  // Send settings to backend
+  const sendSettingsToBackend = () => {
+    sendWsMessage({ type: 'settings', settings: settings });
+  };
+  
+  // Toggle backend processing
+  const handleToggleBackendProcessing = () => {
+    if (isBackendTransitioning) return; // Prevent rapid toggling
+    
+    setIsBackendTransitioning(true);
+    const newProcessingState = !isBackendProcessing;
+    // Optimistically update UI, will be confirmed by backend_status
+    // setIsBackendProcessing(newProcessingState); 
+    
+    if (newProcessingState) {
+      sendWsMessage({ type: 'start_processing' });
+    } else {
+      sendWsMessage({ type: 'stop_processing' });
+    }
   };
 
   // Effect to connect and disconnect WebSocket
@@ -49,7 +100,14 @@ function App() {
       const timeoutId = setTimeout(() => {
           console.log("Attempting to connect WebSocket... (after delay)");
           // Connect and store the instance in the ref *inside* the timeout callback
-          wsRef.current = connectWebSocket(handleNewTranscript);
+          wsRef.current = connectWebSocket(handleWebSocketMessage);
+          
+          // Send initial settings and request current processing state
+          setTimeout(() => {
+            sendSettingsToBackend();
+            // Request initial status from backend after connection
+            sendWsMessage({ type: 'request_backend_status' });
+          }, 1000); // Delay a bit to ensure connection is established
       }, 100); // 100ms delay
 
       // Cleanup function on unmount
@@ -74,6 +132,15 @@ function App() {
         }
     }
   }, []); // Empty dependency array means run only on mount and unmount
+  
+  // Send settings to backend whenever they change
+  useEffect(() => {
+    sendSettingsToBackend();
+  }, [settings]);
+
+  const handleSettingsChange = (newSettings: SettingsType) => {
+    setSettings(newSettings);
+  };
 
   const handleDragStart = (e: React.MouseEvent) => {
     setIsDragging(true);
@@ -107,7 +174,14 @@ function App() {
         onMouseMove={handleDrag}
         onMouseLeave={handleDragEnd}
       >
-        <OverlayWindow transcriptData={transcriptData} />
+        <OverlayWindow 
+          transcriptData={transcriptData} 
+          settings={settings}
+          onSettingsChange={handleSettingsChange}
+          isBackendProcessing={isBackendProcessing}
+          onToggleBackendProcessing={handleToggleBackendProcessing}
+          isBackendTransitioning={isBackendTransitioning}
+        />
       </div>
     </div>
   );

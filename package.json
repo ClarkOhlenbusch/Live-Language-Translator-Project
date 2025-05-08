@@ -1,5 +1,5 @@
 {
-  "name": "italian-audio-overlay",
+  "name": "live-language-translator",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,8 +9,9 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "setup": "node scripts/setup.js",
     "start:ui": "vite",
-    "start:backend": "python backend/main.py",
+    "start:backend": "cd backend && python main.py",
     "start:electron": "electron .",
     "start": "concurrently \"npm:start:ui\" \"npm:start:backend\" \"npm:start:electron\"",
     "build:electron": "electron-builder"
@@ -31,6 +32,7 @@
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.18",
     "concurrently": "^8.2.2",
+    "dotenv": "^16.5.0",
     "electron": "^32.0.0",
     "electron-builder": "^25.0.3",
     "eslint": "^9.9.1",

@@ -1,11 +1,12 @@
 export interface Reply {
-  italian: string;
+  original: string;
   english: string;
 }
 
 export interface TranscriptData {
   id: string;
-  italian: string;
+  original: string;
   english: string;
   replies: Reply[];
+  detected_language?: string; // Language code detected by the backend
 }

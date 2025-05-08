@@ -36,20 +36,33 @@ if DEEPL_API_KEY:
 else:
     logging.warning("DeepL API key not provided. Translator cannot be initialized.")
 
-async def translate_text(text: str, target_lang="EN-US") -> str | None:
-    """Translates Italian text to the target language using DeepL."""
+async def translate_text(text: str, target_lang="EN-US", return_detected_lang=False) -> str | tuple[str, str] | None:
+    """
+    Translates text to the target language using DeepL with auto-detected source language.
+    
+    Args:
+        text: Text to translate
+        target_lang: Target language code
+        return_detected_lang: If True, returns a tuple of (translation, detected_language)
+        
+    Returns:
+        If return_detected_lang is False: The translated text or None on error
+        If return_detected_lang is True: A tuple of (translated_text, detected_language) or None on error
+    """
     if not translator:
         logging.error("DeepL translator is not initialized. Cannot translate.")
         return None
     if not text or not text.strip():
         # Don't waste API calls on empty strings
-        return ""
+        return ("", "") if return_detected_lang else ""
         
     try:
-        # Source language is explicitly set to Italian ("IT")
-        result = translator.translate_text(text, source_lang="IT", target_lang=target_lang)
-        # logging.debug(f"Translated '{text}' -> '{result.text}'")
-        return result.text
+        # Let DeepL auto-detect the source language instead of hardcoding to Italian
+        result = translator.translate_text(text, target_lang=target_lang)
+        detected_lang = result.detected_source_lang
+        logging.debug(f"Translated '{text}' (detected as: {detected_lang}) -> '{result.text}'")
+        
+        return (result.text, detected_lang) if return_detected_lang else result.text
     except deepl.DeepLException as e:
         logging.error(f"DeepL API error during translation: {e}")
         return None
@@ -60,12 +73,13 @@ async def translate_text(text: str, target_lang="EN-US") -> str | None:
 
 # Example usage (for testing this module directly)
 async def main():
-    italian_phrases = [
-        "Ciao come stai?",
-        "Questo è un test.",
-        "Per favore, traducimi."
+    test_phrases = [
+        "Ciao come stai?",  # Italian
+        "Hola, ¿cómo estás?",  # Spanish
+        "Bonjour, comment ça va?",  # French
+        "Hallo, wie geht es dir?"  # German
     ]
-    for phrase in italian_phrases:
+    for phrase in test_phrases:
         translation = await translate_text(phrase)
         if translation:
             print(f"'{phrase}' -> '{translation}'")
